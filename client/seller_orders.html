@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Seller Orders</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="container">
+    <h1>Seller Orders</h1>
+    <div id="ordersList" class="orders-list"></div>
+  </div>
+
+  <script>
+    async function loadOrders() {
+      const res = await fetch("http://localhost:5000/api/orders");
+      const data = await res.json();
+      const ordersList = document.getElementById("ordersList");
+      ordersList.innerHTML = "";
+
+      data.forEach(order => {
+        const card = document.createElement("div");
+        card.className = "order-card";
+
+        card.innerHTML = `
+          <h4>${order.item.name}</h4>
+          <p>Quantity: ${order.quantity}</p>
+          <p>Status: <strong>${order.status}</strong></p>
+          <p>Vendor: ${order.vendorName || 'N/A'}</p>
+          <button onclick="updateOrder('${order._id}', 'Accepted')">Accept</button>
+          <button onclick="updateOrder('${order._id}', 'Declined')">Decline</button>
+        `;
+
+        ordersList.appendChild(card);
+      });
+    }
+
+    async function updateOrder(id, status) {
+      const res = await fetch(`http://localhost:5000/api/orders/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status })
+      });
+
+      if (res.ok) {
+        loadOrders();
+      } else {
+        alert("Failed to update order");
+      }
+    }
+
+    window.onload = loadOrders;
+  </script>
+</body>
+</html>
+

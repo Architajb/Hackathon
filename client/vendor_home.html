@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Vendor Home</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="container">
+    <h1>Welcome, <span id="vendorNameDisplay"></span></h1>
+    <h2>Available Items</h2>
+    <div id="itemsList" class="items-list"></div>
+  </div>
+
+  <script>
+    const vendorName = localStorage.getItem("vendorName") || "Guest";
+    document.getElementById("vendorNameDisplay").textContent = vendorName;
+
+    async function loadItems() {
+      try {
+        const res = await fetch("http://localhost:5000/api/items");
+        const items = await res.json();
+        const itemsList = document.getElementById("itemsList");
+        itemsList.innerHTML = "";
+
+        items.forEach(item => {
+          const card = document.createElement("div");
+          card.className = "item-card";
+
+          card.innerHTML = `
+            <img src="http://localhost:5000/uploads/${item.image}" alt="${item.name}" />
+            <h4>${item.name}</h4>
+            <p>Price: ₹${item.price}</p>
+            <p>Available: ${item.quantity}</p>
+            <input type="number" placeholder="Quantity" min="1" max="${item.quantity}" id="qty-${item._id}" />
+            <button onclick="placeOrder('${item._id}')">Place Order</button>
+          `;
+
+          itemsList.appendChild(card);
+        });
+      } catch (err) {
+        alert("Failed to load items. Please check the server.");
+        console.error(err);
+      }
+    }
+
+    async function placeOrder(itemId) {
+      const qtyInput = document.getElementById(`qty-${itemId}`);
+      const quantity = parseInt(qtyInput.value);
+
+      if (!quantity || quantity < 1) {
+        alert("Please enter a valid quantity.");
+        return;
+      }
+
+      try {
+  const res = await fetch("http://localhost:5000/api/orders", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      itemId,
+      quantity,
+      vendorName
+    })
+  });
+
+  const result = await res.json();
+  console.log("Order API result:", result); // ADD THIS LINE
+
+  if (res.ok) {
+    alert("Order placed successfully!");
+    loadItems();
+  } else {
+    alert("Failed to place order: " + (result.message || "Unknown error"));
+  }
+} catch (err) {
+  console.error("Error placing order:", err);
+  alert("Network or server error while placing order.");
+}
+    }
+
+    window.onload = loadItems;
+  </script>
+</body>
+</html>
